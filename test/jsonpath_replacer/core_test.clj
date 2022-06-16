@@ -11,7 +11,13 @@
   "input json"
   "{\"a\":\"a value\",\"b\":\"b value\",\"c\":{\"a\":\"nested value a\",\"b\":\"nested value b\"}}")
 
-(defn input-json-fixture [test-fn]
+(defn input-json-fixture
+  "Create temporary file to be used as input. Write `input-json-val`
+  there. This file will be deleted on JVM exit.
+  Also define symbols `current-input-file` and
+  `current-input-file-name` containing [[java.io.File]] for temporary
+  file and it's absolute path"
+  [test-fn]
   (let [in-file (java.io.File/createTempFile "input-json-" ".json")]
     (try
       (spit in-file input-json-val)
@@ -49,12 +55,9 @@
       ["-i" current-input-file-name "-o" "tmp-out.json" "$.a"] msg/error-relacement-missing)))
 
 
-;; (deftest core-logic
-;;   (testing "Substititution works correctly"
-;;     (is (= "{\"a\":\"REPLACED\",\"b\":\"b value\",\"c\":{\"a\":\"nested value a\",\"b\":\"nested value b\"}}"
-;;            (.trim (with-out-str (-main "-i" current-input-file-name "$.a" "REPLACED")))))))
-
-    ;; (are [argv expect-stdout] (= expect-stdout
-    ;;                              (.trim (with-out-str (apply -main argv))))
-    ;;   ["-i" current-input-file-name "$.a" "REPLACED"]
-    ;;   "{\"a\":\"REPLACED\",\"b\":\"b value\",\"c\":{\"a\":\"nested value a\",\"b\":\"nested value b\"}}")))
+(deftest core-logic
+  (testing "Substititution works correctly"
+    (is (= "{\"a\":\"REPLACED\",\"b\":\"b value\",\"c\":{\"a\":\"nested value a\",\"b\":\"nested value b\"}}"
+           (with-redefs [jsonpath-replacer.core/write-json (fn [w x] x)] ;; supress stdout output
+             (-main "-c" "-i" current-input-file-name "$.a" "REPLACED"))))
+    ))

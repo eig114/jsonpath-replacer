@@ -1,11 +1,14 @@
 (ns jsonpath-replacer.messages
   (:gen-class))
 
+(def info-usage-hint
+  "Launch with -h or --help for usage information")
+
 (def error-jsopath-missing
-  "JSONPath is not specified")
+  (format "JSONPath is not specified.%n%s" info-usage-hint))
 
 (def error-relacement-missing
-  "Replacement string is not specified")
+  (format "Replacement string is not specified.%n%s" info-usage-hint))
 
 (def error-input-not-existing
-  "Input file must exist")
+  (format "Input file must exist.%n%s" info-usage-hint))
