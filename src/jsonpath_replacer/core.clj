@@ -91,6 +91,3 @@ OPTIONS are optional, and are as follows:
             it
             (JsonFormatter/prettyPrint it))
           (write-json out-writer it))))))
-  
-;; "$..targets[?(@.datasource.type=='prometheus')].datasource.uid"
-;; "c:\\users\\Tudiyarov\\bm-nalog.json"
