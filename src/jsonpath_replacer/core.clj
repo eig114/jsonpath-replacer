@@ -1,18 +1,15 @@
 (ns jsonpath-replacer.core
+  "Main namespace containing `-main` function and CLI processing."
   (:gen-class)
+  (:require
+   [clojure.java.io :as io]
+   [clojure.string :as str]
+   [clojure.tools.cli :refer [parse-opts]]
+   [jsonpath-replacer.json-path :as jsp]
+   [jsonpath-replacer.messages :as msg])
   (:import 
    [com.jayway.jsonpath Option]
-   [com.jayway.jsonpath.internal JsonFormatter])
-  (:require  [jsonpath-replacer.messages :as msg]
-             [jsonpath-replacer.json-path :as jsp]
-             [clojure.java.io :as io]
-             [clojure.tools.cli :refer [parse-opts]]))
-
-(defn write-json-to-file
-  "Write JsonContext object `ctx` to file called `file-name`"
-  [ctx file-name]
-  (with-open [w (io/writer file-name)]
-    (.write w (.jsonString ctx))))
+   [com.jayway.jsonpath.internal JsonFormatter]))
 
 (def cli-opts
   [
@@ -25,13 +22,13 @@
     :default-desc "default STDOUT"
     :default System/out]
    ["-c" "--compact" "Compact output"]
-   ["-j" "--json-replacement" "Treat replacement as a json instead of a plain string"]
+   ["-j" "--json-replacement" "Treat replacement as json instead of a plain string"]
    ["-h" "--help" "Print usage info"]
    ])
 
-(defn usage
-  "Get usage for this program. `compiled-opts` must be result
-  of [[parse-opts]] invocation"
+(defn- usage
+  "Get usage for this program.
+  `compiled-opts` must be result of [[parse-opts]] invocation."
   [compiled-opts]
   (format "java -jar jsonpath-replacer.jar OPTIONS JSONPATH_SPEC REPLACEMENT
 
@@ -41,9 +38,9 @@ OPTIONS are optional, and are as follows:
 %s
 " (compiled-opts :summary)))
 
-(defn full-parse-opts
-  "Parse command line argument array, validate it and return option map
-  containing keys:
+(defn- full-parse-opts
+  "Parse and validate command line argument array, return option map.
+  Result contains keys:
   :json-path
   :replacement
   :in-file
@@ -51,12 +48,12 @@ OPTIONS are optional, and are as follows:
   :compact
   :json-replacement
 
-  If validation fails, print error to stdout and return nil"
+  If validation fails, print error to stdout and return nil."
   [args json-context]
   (let [parsed-opts (parse-opts args cli-opts)
-        {:keys [options arguments errors summary]} parsed-opts]
+        {:keys [options arguments errors]} parsed-opts]
     (cond
-      errors (println (clojure.string/join \newline errors))
+      errors (println (str/join \newline errors))
       (options :help) (println (usage parsed-opts))
       (< (count arguments) 1) (println msg/error-jsopath-missing)
       (< (count arguments) 2) (println msg/error-relacement-missing)
@@ -79,13 +76,14 @@ OPTIONS are optional, and are as follows:
 
 (defn -main
   "Main method.
-  Usage: \"<java invocation> JSONPATH REPLACEMENT [-i IN_FILENAME] [-o OUT_FILENAME] [-c]\"
+  Usage: \"<java invocation> JSONPATH REPLACEMENT [-i IN_FILENAME] [-o OUT_FILENAME] [-c] [-j]\"
 
   if OUT_FILENAME isn't specified, write results to stdout.
   if IN_FILENAME isn't specified, read from stdin
   if -c options is present, output json in compact form
+  if -j option is present, treat JSONPATH as json instead of a plain string
 
-  When called as a clojure function, returns updated json"
+  When called as a clojure function, return updated json."
   [& args]
 
   (let [json-context (jsp/make-json-context Option/SUPPRESS_EXCEPTIONS Option/ALWAYS_RETURN_LIST)

@@ -1,16 +1,12 @@
 (ns jsonpath-replacer.json-path
   "Wrapper functions for com.jayway.jsonpath library"
   (:gen-class)
+  (:require [clojure.java.io :as io])
   (:import 
    [com.jayway.jsonpath
-    WriteContext
-    JsonPath
     Configuration
-    Option
-    ParseContext
-    DocumentContext
-    Predicate])
-  (:require [clojure.java.io :refer :all]))
+    JsonPath
+    Predicate]))
 
 
 (defmacro json-path-func
@@ -23,7 +19,7 @@
     `(defn ~func-name
        ~(format "Wrap JsonPath/%s with convinient varargs" (name real-name))
        [~@arg-list & ~pred-var]
-       (~real-name ~@arg-list (into-array com.jayway.jsonpath.Predicate ~pred-var)))))
+       (~real-name ~@arg-list (into-array Predicate ~pred-var)))))
 
 (json-path-func json-path-compile JsonPath/compile [path])
 (json-path-func json-path-read .read [json-context path])
@@ -39,8 +35,7 @@
       (JsonPath/using)))
 
 (defn parse-json
-  "Parse `readable` to JsonContext, where `readable` can be passed
-  to [[reader]] function"
+  "Parse `readable` to JsonContext."
   ([ctx readable]
-   (with-open [r (reader readable)]
+   (with-open [r (io/reader readable)]
      (.parse ctx (slurp r)))))

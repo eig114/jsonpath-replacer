@@ -13,4 +13,5 @@ pom.xml.asc
 .nrepl-port
 .projectile
 .cpcache/
+.clj-kondo/
 *~

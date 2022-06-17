@@ -1,15 +1,25 @@
 (ns jsonpath-replacer.core-test
   (:import 
    [java.io File])
-  (:require [clojure.test :refer :all]
+  (:require [clojure.java.io :as io]
+            [clojure.tools.cli :refer [parse-opts]]
             [jsonpath-replacer.core :refer :all]
             [jsonpath-replacer.messages :as msg]
-            [clojure.tools.cli :refer [parse-opts]]
-            [clojure.java.io :as io]))
+            [clojure.test :refer :all]))
 
 (def input-json-val
-  "input json"
+  "Input json to be used in tests"
   "{\"a\":\"a value\",\"b\":\"b value\",\"c\":{\"a\":\"nested value a\",\"b\":\"nested value b\"}}")
+
+(def ^java.io.File current-input-file
+  "File containing input json from `input-json-val`, to be used for
+  tests. Defined by [[input-json-fixture]]"
+  nil)
+
+(def current-input-file-name
+  "Absolute file name for `current-input-file`. Defined
+  by [[input-json-fixture]]"
+  nil)
 
 (defn input-json-fixture
   "Create temporary file to be used as input. Write `input-json-val`
@@ -18,18 +28,15 @@
   `current-input-file-name` containing [[java.io.File]] for temporary
   file and it's absolute path"
   [test-fn]
-  (let [in-file (java.io.File/createTempFile "input-json-" ".json")]
+  (let [in-file (File/createTempFile "input-json-" ".json")]
     (try
       (spit in-file input-json-val)
-      (def current-input-file in-file)
-      (def current-input-file-name (.getAbsolutePath in-file))
-      ;;
-      (test-fn)
-      ;;
+      (with-redefs [current-input-file in-file
+                    current-input-file-name (.getAbsolutePath in-file)]
+        (test-fn))
       (finally (.deleteOnExit in-file)))))
 
 (use-fixtures :once input-json-fixture)
-  
 
 (deftest core-arg-parse
   (testing "Valid arguments are parsed with no errors"
@@ -58,7 +65,7 @@
 (deftest core-logic
   (testing "Simple value substititution works correctly"
     (are  [json-path replacement result] (= result
-                                            (with-redefs [write-json (fn [w x] x)] ;; supress stdout output
+                                            (with-redefs [write-json (fn [_writer x] x)] ;; supress stdout output
                                               (-main "-c" "-i" current-input-file-name json-path replacement)))
       ;; replace top-level "a" with "REPLACED"
       "$.a" "REPLACED"
@@ -74,7 +81,7 @@
       "{\"a\":\"{\\\"b\\\":123, \\\"c\\\":\\\"456\\\"}\",\"b\":\"b value\",\"c\":{\"a\":\"nested value a\",\"b\":\"nested value b\"}}"))
   (testing "JSON value substitution also works"
     (are  [json-path replacement result] (= result
-                                            (with-redefs [write-json (fn [w x] x)] ;; supress stdout output
+                                            (with-redefs [write-json (fn [_writer x] x)] ;; supress stdout output
                                               (-main "-c" "-j" "-i" current-input-file-name json-path replacement)))
       ;; replace top-level "a" with {"b":123, "c":"456"}
       "$.a" "{\"b\":123, \"c\":\"456\"}"

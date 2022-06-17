@@ -10,11 +10,13 @@
                  ]
   :profiles {
              ;; Only include NOP logger when building executable
-             ;; uberjar. Otherwise assume user will have their own
-             ;; slf4j implementation on classpath.
-             ;; see https://www.slf4j.org/codes.html#StaticLoggerBinder
+             ;; uberjar or doing dev stuff. Otherwise assume user will
+             ;; have their own slf4j implementation on classpath.  see
+             ;; https://www.slf4j.org/codes.html#StaticLoggerBinder
              :uberjar {:dependencies [[org.slf4j/slf4j-nop "1.7.36"]]}
+             :dev     {:dependencies [[org.slf4j/slf4j-nop "1.7.36"]]}
              }
+  :plugins [[com.github.clj-kondo/lein-clj-kondo "0.2.0"]]
   :repl-options {:init-ns jsonpath-replacer.core}
   :main jsonpath-replacer.core
   :aot :all)
