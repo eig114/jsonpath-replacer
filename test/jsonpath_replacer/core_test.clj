@@ -56,8 +56,26 @@
 
 
 (deftest core-logic
-  (testing "Substititution works correctly"
-    (is (= "{\"a\":\"REPLACED\",\"b\":\"b value\",\"c\":{\"a\":\"nested value a\",\"b\":\"nested value b\"}}"
-           (with-redefs [jsonpath-replacer.core/write-json (fn [w x] x)] ;; supress stdout output
-             (-main "-c" "-i" current-input-file-name "$.a" "REPLACED"))))
-    ))
+  (testing "Simple value substititution works correctly"
+    (are  [json-path replacement result] (= result
+                                            (with-redefs [write-json (fn [w x] x)] ;; supress stdout output
+                                              (-main "-c" "-i" current-input-file-name json-path replacement)))
+      ;; replace top-level "a" with "REPLACED"
+      "$.a" "REPLACED"
+      "{\"a\":\"REPLACED\",\"b\":\"b value\",\"c\":{\"a\":\"nested value a\",\"b\":\"nested value b\"}}"
+      ;; replace nested "a" with "REPLACED"
+      "$.c.a" "REPLACED"
+      "{\"a\":\"a value\",\"b\":\"b value\",\"c\":{\"a\":\"REPLACED\",\"b\":\"nested value b\"}}"
+      ;; replace ALL "a" with "REPLACED"
+      "$..a" "REPLACED"
+      "{\"a\":\"REPLACED\",\"b\":\"b value\",\"c\":{\"a\":\"REPLACED\",\"b\":\"nested value b\"}}"
+      ;; replace top-level "a" with string "{\"b\":123, \"c\":\"456\"}"
+      "$.a" "{\"b\":123, \"c\":\"456\"}"
+      "{\"a\":\"{\\\"b\\\":123, \\\"c\\\":\\\"456\\\"}\",\"b\":\"b value\",\"c\":{\"a\":\"nested value a\",\"b\":\"nested value b\"}}"))
+  (testing "JSON value substitution also works"
+    (are  [json-path replacement result] (= result
+                                            (with-redefs [write-json (fn [w x] x)] ;; supress stdout output
+                                              (-main "-c" "-j" "-i" current-input-file-name json-path replacement)))
+      ;; replace top-level "a" with {"b":123, "c":"456"}
+      "$.a" "{\"b\":123, \"c\":\"456\"}"
+      "{\"a\":{\"b\":123,\"c\":\"456\"},\"b\":\"b value\",\"c\":{\"a\":\"nested value a\",\"b\":\"nested value b\"}}")))

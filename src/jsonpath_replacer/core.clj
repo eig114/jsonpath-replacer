@@ -25,6 +25,7 @@
     :default-desc "default STDOUT"
     :default System/out]
    ["-c" "--compact" "Compact output"]
+   ["-j" "--json-replacement" "Treat replacement as a json instead of a plain string"]
    ["-h" "--help" "Print usage info"]
    ])
 
@@ -48,9 +49,10 @@ OPTIONS are optional, and are as follows:
   :in-file
   :out-file
   :compact
+  :json-replacement
 
   If validation fails, print error to stdout and return nil"
-  [args]
+  [args json-context]
   (let [parsed-opts (parse-opts args cli-opts)
         {:keys [options arguments errors summary]} parsed-opts]
     (cond
@@ -59,8 +61,14 @@ OPTIONS are optional, and are as follows:
       (< (count arguments) 1) (println msg/error-jsopath-missing)
       (< (count arguments) 2) (println msg/error-relacement-missing)
       :else {:json-path (first arguments)
-             :replacement (second arguments)
+             :replacement (if (options :json-replacement)
+                            (->> (second arguments)
+                                 (char-array)
+                                 (jsp/parse-json json-context)
+                                 (.json))
+                            (second arguments))
              :compact (options :compact)
+             :json-replacement (options :json-replacement)
              :in-file (options :in-file)
              :out-file (options :out-file)})))
 
@@ -80,8 +88,8 @@ OPTIONS are optional, and are as follows:
   When called as a clojure function, returns updated json"
   [& args]
 
-  (let [{:keys [json-path replacement in-file out-file compact]} (full-parse-opts args)
-        json-context (jsp/make-json-context Option/SUPPRESS_EXCEPTIONS Option/ALWAYS_RETURN_LIST)]
+  (let [json-context (jsp/make-json-context Option/SUPPRESS_EXCEPTIONS Option/ALWAYS_RETURN_LIST)
+        {:keys [json-path replacement in-file out-file compact]} (full-parse-opts args json-context)]
     (when (and json-path replacement in-file out-file)
       (with-open [out-writer (io/writer out-file)]
         (as-> (jsp/parse-json json-context in-file) it
