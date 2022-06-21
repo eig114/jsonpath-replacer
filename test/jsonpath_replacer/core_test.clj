@@ -1,17 +1,18 @@
 (ns jsonpath-replacer.core-test
   (:import 
    [java.io File])
-  (:require [clojure.java.io :as io]
-            [clojure.tools.cli :refer [parse-opts]]
-            [jsonpath-replacer.core :refer :all]
-            [jsonpath-replacer.messages :as msg]
-            [clojure.test :refer :all]))
+  (:require
+   [clojure.tools.cli :refer [parse-opts]]
+   #_{:clj-kondo/ignore [:refer-all]}
+   [jsonpath-replacer.core :refer :all]
+   [jsonpath-replacer.messages :as msg]
+   [clojure.test :refer :all]))
 
 (def input-json-val
   "Input json to be used in tests"
   "{\"a\":\"a value\",\"b\":\"b value\",\"c\":{\"a\":\"nested value a\",\"b\":\"nested value b\"}}")
 
-(def ^java.io.File current-input-file
+(def ^File current-input-file
   "File containing input json from `input-json-val`, to be used for
   tests. Defined by [[input-json-fixture]]"
   nil)
@@ -60,7 +61,6 @@
       ["-i" current-input-file-name] msg/error-jsopath-missing
       ["-i" current-input-file-name "-o" "tmp-out.json"] msg/error-jsopath-missing
       ["-i" current-input-file-name "-o" "tmp-out.json" "$.a"] msg/error-relacement-missing)))
-
 
 (deftest core-logic
   (testing "Simple value substititution works correctly"

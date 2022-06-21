@@ -8,8 +8,11 @@
    [jsonpath-replacer.json-path :as jsp]
    [jsonpath-replacer.messages :as msg])
   (:import 
-   [com.jayway.jsonpath Option]
+   [com.jayway.jsonpath
+    Option
+    ReadContext]
    [com.jayway.jsonpath.internal JsonFormatter]))
+(set! *warn-on-reflection* true)
 
 (def cli-opts
   [
@@ -69,7 +72,7 @@ OPTIONS are optional, and are as follows:
              :in-file (options :in-file)
              :out-file (options :out-file)})))
 
-(defn write-json [writer js]
+(defn write-json [^java.io.Writer writer ^String js]
   (.write writer js)
   (.flush writer)
   js)
@@ -86,12 +89,12 @@ OPTIONS are optional, and are as follows:
   When called as a clojure function, return updated json."
   [& args]
 
-  (let [json-context (jsp/make-json-context Option/SUPPRESS_EXCEPTIONS Option/ALWAYS_RETURN_LIST)
+  (let [json-context (jsp/make-parse-context Option/SUPPRESS_EXCEPTIONS Option/ALWAYS_RETURN_LIST)
         {:keys [json-path replacement in-file out-file compact]} (full-parse-opts args json-context)]
     (when (and json-path replacement in-file out-file)
       (with-open [out-writer (io/writer out-file)]
         (as-> (jsp/parse-json json-context in-file) it
-          (jsp/json-path-set it json-path replacement)
+          ^ReadContext (jsp/json-path-set it json-path replacement)
           (.jsonString it)
           (if compact
             it

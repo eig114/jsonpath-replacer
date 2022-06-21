@@ -1,12 +1,14 @@
 (ns jsonpath-replacer.json-path-test
   (:import 
    [com.jayway.jsonpath Option])
-  (:require [clojure.test :refer :all]
-            [jsonpath-replacer.json-path :refer :all]))
+  (:require
+   [clojure.test :refer :all]
+   #_{:clj-kondo/ignore [:refer-all]}
+   [jsonpath-replacer.json-path :refer :all]))
 
 (def json-ctx
   "Default context"
-  (make-json-context Option/SUPPRESS_EXCEPTIONS Option/ALWAYS_RETURN_LIST))
+  (make-parse-context Option/SUPPRESS_EXCEPTIONS Option/ALWAYS_RETURN_LIST))
 
 (deftest json-read-jsonpath-test
   (testing "Parser reads values as ReadContext"
