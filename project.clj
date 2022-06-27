@@ -15,7 +15,8 @@
              ;; uberjar or doing dev stuff. Otherwise assume user will
              ;; have their own slf4j implementation on classpath.
              ;; see https://www.slf4j.org/codes.html#StaticLoggerBinder
-             :uberjar {:dependencies [[org.slf4j/slf4j-nop ~slf4j-version]]
+             :uberjar {:dependencies [[org.slf4j/slf4j-nop ~slf4j-version]
+                                      [com.github.clj-easy/graal-build-time "0.1.4"]]
                        :jvm-opts ["-Dclojure.compiler.elide-meta=[:doc :file :line :added]"
                                   "-Dclojure.compiler.direct-linking=true"]}
              :dev     {:dependencies [[org.slf4j/slf4j-nop ~slf4j-version]]}

@@ -72,9 +72,8 @@ OPTIONS are optional, and are as follows:
              :in-file (options :in-file)
              :out-file (options :out-file)})))
 
-(defn write-json [^java.io.Writer writer ^String js]
-  (.write writer js)
-  (.flush writer)
+(defn write-json [writer js]
+  (spit writer js)
   js)
 
 (defn -main

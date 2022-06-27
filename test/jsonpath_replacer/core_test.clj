@@ -65,7 +65,7 @@
 (deftest core-logic
   (testing "Simple value substititution works correctly"
     (are  [json-path replacement result] (= result
-                                            (with-redefs [write-json (fn [_writer x] x)] ;; supress stdout output
+                                            (with-redefs [write-json (fn [_writer x] x)] ;; supress all output
                                               (-main "-c" "-i" current-input-file-name json-path replacement)))
       ;; replace top-level "a" with "REPLACED"
       "$.a" "REPLACED"
@@ -81,8 +81,9 @@
       "{\"a\":\"{\\\"b\\\":123, \\\"c\\\":\\\"456\\\"}\",\"b\":\"b value\",\"c\":{\"a\":\"nested value a\",\"b\":\"nested value b\"}}"))
   (testing "JSON value substitution also works"
     (are  [json-path replacement result] (= result
-                                            (with-redefs [write-json (fn [_writer x] x)] ;; supress stdout output
+                                            (with-redefs [write-json (fn [_writer x] x)] ;; supress all output
                                               (-main "-c" "-j" "-i" current-input-file-name json-path replacement)))
       ;; replace top-level "a" with {"b":123, "c":"456"}
       "$.a" "{\"b\":123, \"c\":\"456\"}"
       "{\"a\":{\"b\":123,\"c\":\"456\"},\"b\":\"b value\",\"c\":{\"a\":\"nested value a\",\"b\":\"nested value b\"}}")))
+
