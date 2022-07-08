@@ -6,7 +6,7 @@
   :license {:name "The MIT License"}
   :dependencies [[org.clojure/clojure "1.11.1"]
                  [org.clojure/tools.cli "1.0.206"]
-                 [com.jayway.jsonpath/json-path "2.4.0"]
+                 [com.jayway.jsonpath/json-path "2.7.0"]
                  ;;slf4j needed for jsonpath
                  [org.slf4j/slf4j-api ~slf4j-version]
                  ]
