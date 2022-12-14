@@ -10,7 +10,8 @@
   (:import 
    [com.jayway.jsonpath
     Option
-    ReadContext]
+    ReadContext
+    ParseContext]
    [com.jayway.jsonpath.internal JsonFormatter]))
 (set! *warn-on-reflection* true)
 
@@ -27,6 +28,7 @@
    ["-c" "--compact" "Compact output"]
    ["-j" "--json-replacement" "Treat replacement as json instead of a plain string"]
    ["-h" "--help" "Print usage info"]
+   ["-x" "--extract" "Instead of replacing, extract selected jsonpath spec"]
    ])
 
 (defn- usage
@@ -50,27 +52,37 @@ OPTIONS are optional, and are as follows:
   :out-file
   :compact
   :json-replacement
+  :extract
 
   If validation fails, print error to stdout and return nil."
-  [args json-context]
+  [args]
   (let [parsed-opts (parse-opts args cli-opts)
         {:keys [options arguments errors]} parsed-opts]
     (cond
       errors (println (str/join \newline errors))
       (options :help) (println (usage parsed-opts))
       (< (count arguments) 1) (println msg/error-jsopath-missing)
-      (< (count arguments) 2) (println msg/error-relacement-missing)
+      (and (< (count arguments) 2) (not (options :extract))) (println msg/error-relacement-missing)
       :else {:json-path (first arguments)
-             :replacement (if (options :json-replacement)
-                            (->> (second arguments)
-                                 (char-array)
-                                 (jsp/parse-json json-context)
-                                 (.json))
-                            (second arguments))
+             :replacement (second arguments)
              :compact (options :compact)
              :json-replacement (options :json-replacement)
+             :extract (options :extract)
              :in-file (options :in-file)
              :out-file (options :out-file)})))
+
+(defn- default-context []
+  (jsp/make-parse-context Option/SUPPRESS_EXCEPTIONS Option/ALWAYS_RETURN_LIST))
+
+(defn- extraction-context []
+  (jsp/make-parse-context Option/SUPPRESS_EXCEPTIONS))
+
+;; todo remove when https://github.com/json-path/JsonPath/issues/762 is fixed
+(defn- to-json [^ParseContext json-context obj]
+  (if (or (instance? Number obj)
+          (instance? Boolean obj))    
+    (net.minidev.json.JSONValue/toJSONString obj)
+    (.jsonString (.parse json-context obj))))
 
 (defn write-json [writer js]
   (spit writer js)
@@ -84,17 +96,26 @@ OPTIONS are optional, and are as follows:
   if IN_FILENAME isn't specified, read from stdin
   if -c options is present, output json in compact form
   if -j option is present, treat JSONPATH as json instead of a plain string
+  if -x option is present, extract JSONPATH from input. REPLACEMENT is ignored
 
   When called as a clojure function, return updated json."
   [& args]
 
-  (let [json-context (jsp/make-parse-context Option/SUPPRESS_EXCEPTIONS Option/ALWAYS_RETURN_LIST)
-        {:keys [json-path replacement in-file out-file compact]} (full-parse-opts args json-context)]
-    (when (and json-path replacement in-file out-file)
+  (let [{:keys [json-path replacement in-file out-file compact extract json-replacement]} (full-parse-opts args)
+        json-context (if extract (extraction-context) (default-context))
+        ;; of json-replacement is present, treat replacement as json
+        replacement (if json-replacement
+                      (->> replacement
+                           (char-array)
+                           (jsp/parse-json json-context)
+                           (.json))
+                      replacement)]
+    (when (and json-path in-file out-file)
       (with-open [out-writer (io/writer out-file)]
         (as-> (jsp/parse-json json-context in-file) it
-          ^ReadContext (jsp/json-path-set it json-path replacement)
-          (.jsonString it)
+          (if extract
+            (to-json json-context (jsp/json-path-read it json-path))
+            (.jsonString ^ReadContext (jsp/json-path-set it json-path replacement)))
           (if compact
             it
             (JsonFormatter/prettyPrint it))
