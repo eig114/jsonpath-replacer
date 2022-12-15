@@ -1,6 +1,6 @@
 (def slf4j-version "1.7.36")
 
-(defproject jsonpath-replacer "0.1.0-SNAPSHOT"
+(defproject jsonpath-replacer "0.2.0"
   :description "Replace values defined by JSONPath"
   :url "https://github.com/eig114/jsonpath-replacer"
   :license {:name "The MIT License"}

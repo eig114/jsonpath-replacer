@@ -79,10 +79,10 @@ OPTIONS are optional, and are as follows:
 
 ;; todo remove when https://github.com/json-path/JsonPath/issues/762 is fixed
 (defn- to-json [^ParseContext json-context obj]
-  (if (or (instance? Number obj)
-          (instance? Boolean obj))    
-    (net.minidev.json.JSONValue/toJSONString obj)
-    (.jsonString (.parse json-context obj))))
+  (cond (or (instance? Number obj)
+            (instance? Boolean obj)
+            (instance? String obj)) (net.minidev.json.JSONValue/toJSONString obj)
+        true (.jsonString (.parse json-context obj))))
 
 (defn write-json [writer js]
   (spit writer js)
