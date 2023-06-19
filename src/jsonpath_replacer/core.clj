@@ -77,11 +77,11 @@ OPTIONS are optional, and are as follows:
 (defn- extraction-context []
   (jsp/make-parse-context Option/SUPPRESS_EXCEPTIONS))
 
-;; todo remove when https://github.com/json-path/JsonPath/issues/762 is fixed
 (defn- to-json [^ParseContext json-context obj]
-  (cond (or (instance? Number obj)
-            (instance? Boolean obj)
-            (instance? String obj)) (net.minidev.json.JSONValue/toJSONString obj)
+  (cond (nil? obj) "null"
+        ;; TODO investigate if JsonSmartJsonProvider's toJson method should handle strings
+        ;; and open an issue if it should
+        (instance? String obj) (net.minidev.json.JSONValue/toJSONString obj)
         true (.jsonString (.parse json-context obj))))
 
 (defn write-json [writer js]
@@ -90,7 +90,7 @@ OPTIONS are optional, and are as follows:
 
 (defn -main
   "Main method.
-  Usage: \"<java invocation> JSONPATH REPLACEMENT [-i IN_FILENAME] [-o OUT_FILENAME] [-c] [-j]\"
+  Usage: \"<java invocation> JSONPATH REPLACEMENT [-i IN_FILENAME] [-o OUT_FILENAME] [-c] [-j] [-x]\"
 
   if OUT_FILENAME isn't specified, write results to stdout.
   if IN_FILENAME isn't specified, read from stdin
@@ -103,7 +103,7 @@ OPTIONS are optional, and are as follows:
 
   (let [{:keys [json-path replacement in-file out-file compact extract json-replacement]} (full-parse-opts args)
         json-context (if extract (extraction-context) (default-context))
-        ;; of json-replacement is present, treat replacement as json
+        ;; if json-replacement is present, treat replacement as json
         replacement (if json-replacement
                       (->> replacement
                            (char-array)
@@ -119,4 +119,5 @@ OPTIONS are optional, and are as follows:
           (if compact
             it
             (JsonFormatter/prettyPrint it))
+          (str it (System/lineSeparator))
           (write-json out-writer it))))))
