@@ -71,12 +71,6 @@ OPTIONS are optional, and are as follows:
              :in-file (options :in-file)
              :out-file (options :out-file)})))
 
-(defn- default-context []
-  (jsp/make-parse-context Option/SUPPRESS_EXCEPTIONS Option/ALWAYS_RETURN_LIST))
-
-(defn- extraction-context []
-  (jsp/make-parse-context Option/SUPPRESS_EXCEPTIONS))
-
 (defn- to-json [^ParseContext json-context obj]
   (cond (nil? obj) "null"
         ;; TODO investigate if JsonSmartJsonProvider's toJson method should handle strings
@@ -84,9 +78,40 @@ OPTIONS are optional, and are as follows:
         (instance? String obj) (net.minidev.json.JSONValue/toJSONString obj)
         true (.jsonString (.parse json-context obj))))
 
-(defn write-json [writer js]
-  (spit writer js)
+(defn default-context
+  "Create json context to be used in replacement mode"
+  []
+  (jsp/make-parse-context Option/SUPPRESS_EXCEPTIONS Option/ALWAYS_RETURN_LIST))
+
+(defn extraction-context
+  "Create json context to be used in extraction mode"
+  []
+  (jsp/make-parse-context Option/SUPPRESS_EXCEPTIONS))
+
+(defn generate-json-replacement
+  "Generate replacement string from replacement-path"
+  [json-context replacement-path]
+  (->> replacement-path
+       (char-array)
+       (jsp/parse-json json-context)
+       (.json)))
+
+(defn write-json
+  "Write and return js"
+  [writer js]
+  (spit writer (str js (System/lineSeparator)))
   js)
+
+(defn get-result
+  "Main method producing updated json"
+  [json-path replacement in-file compact extract json-context]
+  (as-> (jsp/parse-json json-context in-file) it
+          (if extract
+            (to-json json-context (jsp/json-path-read it json-path))
+            (.jsonString ^ReadContext (jsp/json-path-set it json-path replacement)))
+          (if compact
+            it
+            (JsonFormatter/prettyPrint it))))
 
 (defn -main
   "Main method.
@@ -105,19 +130,15 @@ OPTIONS are optional, and are as follows:
         json-context (if extract (extraction-context) (default-context))
         ;; if json-replacement is present, treat replacement as json
         replacement (if json-replacement
-                      (->> replacement
-                           (char-array)
-                           (jsp/parse-json json-context)
-                           (.json))
+                      (generate-json-replacement json-context replacement)
                       replacement)]
     (when (and json-path in-file out-file)
       (with-open [out-writer (io/writer out-file)]
-        (as-> (jsp/parse-json json-context in-file) it
-          (if extract
-            (to-json json-context (jsp/json-path-read it json-path))
-            (.jsonString ^ReadContext (jsp/json-path-set it json-path replacement)))
-          (if compact
-            it
-            (JsonFormatter/prettyPrint it))
-          (str it (System/lineSeparator))
-          (write-json out-writer it))))))
+        (write-json out-writer
+                    (get-result json-path
+                                replacement
+                                in-file
+                                compact
+                                extract
+                                json-context))))))
+
